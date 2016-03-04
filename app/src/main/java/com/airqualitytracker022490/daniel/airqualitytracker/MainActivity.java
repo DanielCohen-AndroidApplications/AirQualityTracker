@@ -12,12 +12,17 @@ import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import com.google.android.gms.analytics.GoogleAnalytics;
+import com.google.android.gms.analytics.HitBuilders;
+import com.google.android.gms.analytics.Tracker;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -63,7 +68,7 @@ public class MainActivity extends FragmentActivity implements
     Button locationBtn, gpsBtn, aqiBtn,descriptionBtn,polBtn,childBtn,sportBtn,healthBtn,indoorBtn,outdoorBtn,effectsBtn,causesBtn;
 
     //textViews which respectively display the info retrieved by the buttons above.
-    TextView gpsTextView,aqiTextView,descriptionTextView,polTextView,childTextView,
+    TextView aqiTextView,descriptionTextView,polTextView,childTextView,
             sportTextView, healthTextView,indoorTextView, outdoorTextView,effectsTextView, causesTextView;
 
     //web service for accessing air quality API
@@ -89,12 +94,23 @@ public class MainActivity extends FragmentActivity implements
 
     //string representations of retrieved data which are displayed in their appropriate textviews.
     String responseString,location,strAdd,selection,result,breezometerAqi,aqDescription, pollutant, child, sport,health, indoors, outdoors,effects,causes, emoticon;
-
+    Tracker tracker;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         getActionBar();
+        //Google Analytics
+        try {
+            GoogleAnalytics analytics = GoogleAnalytics.getInstance(MainActivity.this);
+            analytics.setLocalDispatchPeriod(1800);
+            tracker = analytics.newTracker("UA-74634780-1");
+            tracker.enableExceptionReporting(true);
+            tracker.enableAdvertisingIdCollection(true);
+            tracker.enableAutoActivityTracking(true);
+        } catch (Exception e){
+            Log.v("_dan", e.getMessage());
+        }
         //default initial values, in case gps is not available
         latitude=0.0;
         longitude=0.0;
@@ -144,6 +160,7 @@ public class MainActivity extends FragmentActivity implements
                     causesTextView.setText(""); causesTextView.setVisibility(View.VISIBLE);causesTextView.setText(""); gettingCauses = false; causesException = false;
                     mySnippet = new StringBuilder("");
                     location = editText.getText().toString().replace(",", "").replace(" ", "+");
+                    clearExceptions();
                     new LatLongTask().execute();
                 }
             }
@@ -161,6 +178,7 @@ public class MainActivity extends FragmentActivity implements
                 map.clear();
                 selection="aqi";
                 gettingAqi=true;
+                clearExceptions();
                 new MyTask().execute(location);
             }
         });
@@ -171,6 +189,7 @@ public class MainActivity extends FragmentActivity implements
                 map.clear();
                 selection="description";
                 gettingDescription=true;
+                clearExceptions();
                 new MyTask().execute(location);
             }
         });
@@ -181,6 +200,7 @@ public class MainActivity extends FragmentActivity implements
                 map.clear();
                 selection="pol";
                 gettingPol=true;
+                clearExceptions();
                 new MyTask().execute(location);
             }
         });
@@ -191,6 +211,7 @@ public class MainActivity extends FragmentActivity implements
                 map.clear();
                 selection = "child";
                 gettingChild=true;
+                clearExceptions();
                 new MyTask().execute(location);
             }
         });
@@ -201,6 +222,7 @@ public class MainActivity extends FragmentActivity implements
                 map.clear();
                 selection = "sport";
                 gettingSport=true;
+                clearExceptions();
                 new MyTask().execute(location);
             }
         });
@@ -211,6 +233,7 @@ public class MainActivity extends FragmentActivity implements
                 map.clear();
                 selection = "health";
                 gettingHealth= true;
+                clearExceptions();
                 new MyTask().execute(location);
             }
         });
@@ -221,6 +244,7 @@ public class MainActivity extends FragmentActivity implements
                 map.clear();
                 selection = "indoors";
                 gettingIndoors=true;
+                clearExceptions();
                 new MyTask().execute(location);
             }
         });
@@ -231,6 +255,7 @@ public class MainActivity extends FragmentActivity implements
                 map.clear();
                 selection = "outdoors";
                 gettingOutdoors=true;
+                clearExceptions();
                 new MyTask().execute(location);
             }
         });
@@ -241,6 +266,7 @@ public class MainActivity extends FragmentActivity implements
                 map.clear();
                 selection = "effects";
                 gettingEffects=true;
+                clearExceptions();
                 new MyTask().execute(location);
             }
         });
@@ -251,11 +277,22 @@ public class MainActivity extends FragmentActivity implements
                 map.clear();
                 selection = "causes";
                 gettingCauses=true;
+                clearExceptions();
                 new MyTask().execute(location);
             }
         });
     }
+    @Override
+    protected void onStart() {
+        super.onStart();
+        GoogleAnalytics.getInstance(this).reportActivityStart(this);
+    }
 
+    @Override
+    protected void onStop() {
+        GoogleAnalytics.getInstance(this).reportActivityStop(this);
+        super.onStop();
+    }
 
     //This method gets the current location by best available provider; it is called onCreate and which the gpsBtn is clicked
     //The method sets the map and all location-relevant parameters to the retrieved location,
@@ -752,5 +789,16 @@ public class MainActivity extends FragmentActivity implements
         });
         googleMap.moveCamera(CameraUpdateFactory.newLatLng(pos));
     }
-
+    public void clearExceptions(){
+        aqiException = false;
+        childException = false;
+        descriptionException = false;
+        pollutantException = false;
+        sportException = false;
+        healthException = false;
+        indoorsException = false;
+        outdoorsException = false;
+        effectsException = false;
+        causesException = false;
+    }
 }

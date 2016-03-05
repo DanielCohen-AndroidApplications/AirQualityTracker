@@ -169,6 +169,7 @@ public class MainActivity extends FragmentActivity implements
         gpsBtn.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
+                map.clear();
                 getCurrentLocation();
                 editText.setText(getCurrentLocation()[2]);
             }

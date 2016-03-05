@@ -147,6 +147,7 @@ public class MainActivity extends FragmentActivity implements
             @Override
             public void onClick(View view) {
                 if(!editText.getText().toString().equals("")) {
+                    map.clear();
                     usingGps = false;
                     aqiBtn.setVisibility(View.VISIBLE); aqiTextView.setVisibility(View.VISIBLE); aqiTextView.setText("");gettingAqi = false;aqiException = false;
                     descriptionBtn.setVisibility(View.VISIBLE); descriptionTextView.setVisibility(View.VISIBLE); descriptionTextView.setText("");gettingDescription = false; descriptionException = false;
@@ -159,7 +160,7 @@ public class MainActivity extends FragmentActivity implements
                     effectsTextView.setText(""); effectsTextView.setVisibility(View.VISIBLE);effectsTextView.setText(""); gettingEffects = false; effectsException = false;
                     causesTextView.setText(""); causesTextView.setVisibility(View.VISIBLE);causesTextView.setText(""); gettingCauses = false; causesException = false;
                     mySnippet = new StringBuilder("");
-                    location = editText.getText().toString().replace(",", "").replace(" ", "+");
+                    location = editText.getText().toString().replace(",", "").replace(" ", "+").replace("\n","");
                     clearExceptions();
                     new LatLongTask().execute();
                 }
@@ -747,7 +748,7 @@ public class MainActivity extends FragmentActivity implements
             locationInfo = new JSONObject(responseString);
 
         }catch(Exception e){
-            e.printStackTrace();
+            Log.v("_dan,", "Get LatLong issue");
         }
         return locationInfo;
 

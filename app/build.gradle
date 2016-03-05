@@ -8,8 +8,8 @@ android {
         applicationId "com.airqualitytracker022490.daniel.airqualitytracker"
         minSdkVersion 11
         targetSdkVersion 21
-        versionCode 1
-        versionName "1.1"
+        versionCode 3
+        versionName "1.2"
     }
     buildTypes {
         release {

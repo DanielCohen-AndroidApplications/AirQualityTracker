@@ -50,7 +50,7 @@ import com.google.android.gms.common.api.GoogleApiClient;
  * Created by Daniel on 2/7/2016.
  */
 public class MainActivity extends FragmentActivity implements
-        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, OnMapReadyCallback{
+        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, OnMapReadyCallback, GoogleMap.OnMapLongClickListener{
 
     //Google map frag automatically drops a pin at last know location; the user can input text to get a new location.
     // The controls below allow them to get air quality info at the selected location.
@@ -58,7 +58,7 @@ public class MainActivity extends FragmentActivity implements
     SupportMapFragment fm;
 
     //Doubles for lat and long; either retrieved by GPS or text input
-    Double latitude,longitude;
+    Double mLatitude,mLongitude;
 
     //EditText to input a location as text (city, country, address, zip, etc.)
     EditText editText;
@@ -112,14 +112,14 @@ public class MainActivity extends FragmentActivity implements
             Log.v("_dan", e.getMessage());
         }
         //default initial values, in case gps is not available
-        latitude=0.0;
-        longitude=0.0;
+        mLatitude=0.0;
+        mLongitude=0.0;
 
         //Google map fragment
         fm = (SupportMapFragment)  getSupportFragmentManager().findFragmentById(R.id.map); map = fm.getMap(); map.setMapType(GoogleMap.MAP_TYPE_NORMAL); map.setMyLocationEnabled(true);
         map.getUiSettings().setZoomControlsEnabled(true); map.getUiSettings().setCompassEnabled(true); map.getUiSettings().setMyLocationButtonEnabled(true);
         map.getUiSettings().setZoomGesturesEnabled(true); map.getUiSettings().setRotateGesturesEnabled(true);
-
+        map.setOnMapLongClickListener(this);
 
         //assignments for textViews, buttons, and the one editText
         locationBtn=(Button) findViewById(R.id.locationBtn); editText= (EditText) findViewById(R.id.editText);
@@ -306,10 +306,10 @@ public class MainActivity extends FragmentActivity implements
         for(int i = 0; i < providers.size(); i++) {
             l = lm.getLastKnownLocation(providers.get(i));
             if (l != null) {
-                latitude = l.getLatitude();
-                longitude = l.getLongitude();
+                mLatitude = l.getLatitude();
+                mLongitude = l.getLongitude();
                 usingGps=true;
-                strAdd = getCompleteAddressString(latitude, longitude);
+                strAdd = getCompleteAddressString(mLatitude, mLongitude);
                 location=strAdd.replace(",","").replace(" ", "+");
                 if(!(strAdd.equals(""))) {
                     locationBtn.setText("Get new location");
@@ -378,7 +378,7 @@ public class MainActivity extends FragmentActivity implements
             onMapReady(map);
         }
         // The method returns a String[] with three elements: lat, lng, and strAdd (string representions of the latitude, longitude, and the address)
-        return new String[]{latitude+"",longitude+"",strAdd};
+        return new String[]{mLatitude+"",mLongitude+"",strAdd};
     }
 
     //Gets an address string approximating a latitude and longitude
@@ -423,11 +423,62 @@ public class MainActivity extends FragmentActivity implements
 
     }
 
+    @Override
+    public void onMapLongClick(LatLng latLng) {
+        usingGps = false;
+        aqiBtn.setVisibility(View.VISIBLE); aqiTextView.setVisibility(View.VISIBLE); aqiTextView.setText("");gettingAqi = false;aqiException = false;
+        descriptionBtn.setVisibility(View.VISIBLE); descriptionTextView.setVisibility(View.VISIBLE); descriptionTextView.setText("");gettingDescription = false; descriptionException = false;
+        polBtn.setVisibility(View.VISIBLE); polTextView.setVisibility(View.VISIBLE); polTextView.setText("");gettingPol = false; pollutantException = false;
+        childBtn.setVisibility(View.VISIBLE);childTextView.setVisibility(View.VISIBLE); childTextView.setText("");gettingChild = false; childException = false;
+        sportBtn.setVisibility(View.VISIBLE); sportTextView.setVisibility(View.VISIBLE); sportTextView.setText("");gettingSport = false; sportException = false;
+        healthBtn.setVisibility(View.VISIBLE);healthTextView.setVisibility(View.VISIBLE);healthTextView.setText(""); gettingHealth = false; healthException = false;
+        indoorBtn.setVisibility(View.VISIBLE);indoorTextView.setVisibility(View.VISIBLE);indoorTextView.setText("");gettingIndoors=false; indoorsException = false;
+        outdoorTextView.setText(""); outdoorTextView.setVisibility(View.VISIBLE);outdoorTextView.setText(""); gettingOutdoors = false; outdoorsException = false;
+        effectsTextView.setText(""); effectsTextView.setVisibility(View.VISIBLE);effectsTextView.setText(""); gettingEffects = false; effectsException = false;
+        causesTextView.setText(""); causesTextView.setVisibility(View.VISIBLE);causesTextView.setText(""); gettingCauses = false; causesException = false;
+        mySnippet = new StringBuilder("");
+        map.clear();
+        mLatitude=latLng.latitude;
+        mLongitude=latLng.longitude;
+        location=getCompleteAddressString(latLng.latitude,latLng.longitude).replace(",","").replace(" ", "+").replace("\n","");
+        editText.setText(getCompleteAddressString(latLng.latitude,latLng.longitude).replace("+", " "));
+        map.addMarker(new MarkerOptions().position(latLng).title(getCompleteAddressString(latLng.latitude,latLng.longitude).replace("+", " ")));
+        map.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+        map.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
+
+            @Override
+            public View getInfoWindow(Marker arg0) {
+                return null;
+            }
+
+            @Override
+            public View getInfoContents(Marker marker) {
+
+                LinearLayout info = new LinearLayout(getApplication());
+                info.setOrientation(LinearLayout.VERTICAL);
+
+                TextView title = new TextView(getApplicationContext());
+                title.setTextColor(Color.BLACK);
+                title.setGravity(Gravity.CENTER);
+                title.setTypeface(null, Typeface.BOLD);
+                title.setText(marker.getTitle());
+
+                TextView snippet = new TextView(getBaseContext());
+                snippet.setTextColor(Color.GRAY);
+                snippet.setText(marker.getSnippet());
+
+                info.addView(title);
+                info.addView(snippet);
+
+                return info;
+            }
+        });
+    }
     //Asynchronous task for getting data from the air quality API and putting the data into the UI post execute
     class MyTask extends AsyncTask<String, Integer, String> {
         @Override
         protected String doInBackground(String... params) {
-            result=service.getAQ(params[0], usingGps, latitude,longitude);
+            result=service.getAQ(params[0], usingGps, mLatitude,mLongitude);
             if(selection.equals("aqi")) {
                 try {
                     aqi = new JSONObject(result);
@@ -714,8 +765,8 @@ public class MainActivity extends FragmentActivity implements
                 latLong=getLatLong();
                 JSONArray resultJSONArray = latLong.optJSONArray("results");
                 JSONObject locationJSONObj = resultJSONArray.getJSONObject(0).optJSONObject("geometry").optJSONObject("location");
-                latitude=locationJSONObj.optDouble("lat");
-                longitude=locationJSONObj.optDouble("lng");
+                mLatitude=locationJSONObj.optDouble("lat");
+                mLongitude=locationJSONObj.optDouble("lng");
             }catch(Exception e){
                 e.printStackTrace();
             }
@@ -729,6 +780,7 @@ public class MainActivity extends FragmentActivity implements
         protected void onPreExecute() {
 
         }
+
         @Override
         protected void onProgressUpdate(Integer... values) {
 
@@ -739,7 +791,7 @@ public class MainActivity extends FragmentActivity implements
     public JSONObject getLatLong() {
 
         try {
-            URI uri = new URI("https://maps.googleapis.com/maps/api/geocode/json?address=" +location+"&key=AIzaSyAOolIF3JIZfb-1PyotIkVYIV0LXNFW7fs");
+            URI uri = new URI("https://maps.googleapis.com/maps/api/geocode/json?address=" + location + "&key=AIzaSyAOolIF3JIZfb-1PyotIkVYIV0LXNFW7fs");
             HttpGet request = new HttpGet(uri);
             HttpClient client = new DefaultHttpClient();
             response = client.execute(request);
@@ -747,7 +799,7 @@ public class MainActivity extends FragmentActivity implements
             responseString = EntityUtils.toString(httpEntity);
             locationInfo = new JSONObject(responseString);
 
-        }catch(Exception e){
+        } catch (Exception e) {
             Log.v("_dan,", "Get LatLong issue");
         }
         return locationInfo;
@@ -757,7 +809,7 @@ public class MainActivity extends FragmentActivity implements
     //This method focuses the camera on the appropriate map location (either from gps or text input), with a marker contianing air quality info
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        LatLng pos = new LatLng(latitude,longitude);
+        LatLng pos = new LatLng(mLatitude, mLongitude);
         googleMap.addMarker(new MarkerOptions().position(pos).title(location.replace("+", " ")).snippet(mySnippet.toString()).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
         googleMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
 
@@ -790,6 +842,7 @@ public class MainActivity extends FragmentActivity implements
         });
         googleMap.moveCamera(CameraUpdateFactory.newLatLng(pos));
     }
+
     public void clearExceptions(){
         aqiException = false;
         childException = false;
